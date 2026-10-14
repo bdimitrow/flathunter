@@ -21,7 +21,7 @@ Setting up this project on your local machine can be a bit complicated if you ha
 
 Flathunter is a Python application which periodically [scrapes](https://en.wikipedia.org/wiki/Web_scraping) property listings sites, configured by the user, to find new rental real-estate listings, reporting them over messaging services.
 
-Currently available messaging services are [Telegram](https://telegram.org/), [Mattermost](https://mattermost.com/), [Apprise](https://github.com/caronc/apprise) and [Slack](https://slack.com/).
+Currently available messaging services are [Telegram](https://telegram.org/), [Mattermost](https://mattermost.com/), [Apprise](https://github.com/caronc/apprise) [Slack](https://slack.com/) and [Signal](https://signal.org/).
 
 ## Table of Contents
 - [Background](#background)
@@ -405,3 +405,44 @@ Other contributions were made along the way by:
 ## Contributing
 
 If you want to make a contribution, please check out the contributor code of conduct ([EN 🇬🇧](CODE_OF_CONDUCT.en.md)/[DE 🇩🇪](CODE_OF_CONDUCT.de.md)) first. Pull requests are very welcome, as are [issues](https://github.com/flathunters/flathunter/issues). If you file an issue, please include as much information as possible about how to reproduce the issue.
+
+## imot.bg and Signal
+
+Add an imot.bg search results URL (for example
+`https://www.imot.bg/obiavi/naemi/grad-sofiya`) to `urls`. Copy the URL after
+applying your filters on imot.bg. The crawler follows next-page links, respects
+`max_pages`, and deduplicates promoted listings. It extracts the title, location,
+price, area, room count (for numbered apartment types), and main photo.
+Prices retain their listed currency; numeric price filters do not convert currencies.
+
+Signal requires a running [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api)
+service with your sender account already registered or linked. Follow that project's
+setup instructions to link the service using Signal's Linked Devices screen.
+Flathunter sends text through its `/v2/send` endpoint; it does not register accounts.
+
+```yaml
+urls:
+  - https://www.imot.bg/obiavi/naemi/grad-sofiya
+notifiers:
+  - signal
+signal:
+  api_url: http://localhost:8080
+  number: "+359888000001"
+  recipients:
+    - "+359888000002"
+    # - "group.YOUR_GROUP_ID"
+```
+
+Use the service's base URL, without `/v2/send`. Quote phone numbers to preserve
+`+`. Recipients can be phone numbers or `group.` IDs returned by the service.
+If Flathunter runs in Docker, use a hostname reachable from its container
+(for example `http://signal-api:8080` on a shared Docker network).
+The same notifier supports heartbeat messages and the existing `message` template.
+HTTP and connection failures are raised rather than reported as successful delivery.
+
+The configuration wizard also offers Signal. Environment overrides are:
+
+- `FLATHUNTER_NOTIFIERS=signal`
+- `FLATHUNTER_SIGNAL_API_URL=http://localhost:8080`
+- `FLATHUNTER_SIGNAL_NUMBER=+359888000001`
+- `FLATHUNTER_SIGNAL_RECIPIENTS=+359888000002,group.YOUR_GROUP_ID`

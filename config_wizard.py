@@ -32,6 +32,7 @@ class Notifier(Enum):
     MATTERMOST = "mattermost"
     APPRISE = "apprise"
     SLACK = "slack"
+    SIGNAL = "signal"
 
 def welcome():
     """Display the welcome dialog"""
@@ -100,6 +101,7 @@ def select_notifier(config: YamlConfig) -> str:
             (Notifier.MATTERMOST.value, "Mattermost"),
             (Notifier.APPRISE.value, "Apprise"),
             (Notifier.SLACK.value, "Slack"),
+            (Notifier.SIGNAL.value, "Signal"),
         ],
         title="Configure notifications",
         text="Choose a notification platform.",
@@ -202,6 +204,20 @@ def configure_slack(config: YamlConfig) -> Dict[str, Any]:
         }
     }
 
+def configure_signal(config: YamlConfig) -> Dict[str, Any]:
+    """Configure an existing signal-cli-rest-api account."""
+    api_url = prompt_with_default("Signal REST API base URL: ", config.signal_api_url())
+    number = prompt_with_default("Signal sender number (including +): ", config.signal_number())
+    recipients = prompt_with_default("Recipients (comma-separated numbers or group IDs): ",
+                                     ','.join(config.signal_recipients()))
+    recipient_list = [value.strip() for value in recipients.split(',') if value.strip()]
+    if not api_url.strip() or not number.strip() or not recipient_list:
+        raise ConfigurationError("Signal requires an API URL, sender number and recipients")
+    return {Notifier.SIGNAL.value: {
+        "api_url": api_url.strip(), "number": number.strip(),
+        "recipients": recipient_list
+    }}
+
 def configure_notifier(notifier: str, config) -> Dict[str, Any]:
     """Configure the selected / active notifier"""
     if notifier == Notifier.TELEGRAM.value:
@@ -210,6 +226,8 @@ def configure_notifier(notifier: str, config) -> Dict[str, Any]:
         return configure_mattermost(config)
     if notifier == Notifier.APPRISE.value:
         return configure_apprise(config)
+    if notifier == Notifier.SIGNAL.value:
+        return configure_signal(config)
     if notifier == Notifier.SLACK.value:
         return configure_slack(config)
     raise ConfigurationError("Invalid Notifier Selection")

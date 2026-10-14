@@ -18,6 +18,7 @@ from flathunter.crawler.immowelt import Immowelt
 from flathunter.crawler.wggesucht import WgGesucht
 from flathunter.crawler.vrmimmo import VrmImmo
 from flathunter.crawler.subito import Subito
+from flathunter.crawler.imot import Imot
 from flathunter.filter import Filter
 from flathunter.logging import logger
 from flathunter.exceptions import ConfigException
@@ -90,6 +91,10 @@ class Env:
     FLATHUNTER_APPRISE_IMAGE_LIMIT = _read_env(
         "FLATHUNTER_APPRISE_IMAGE_LIMIT")
 
+    FLATHUNTER_SIGNAL_API_URL = _read_env("FLATHUNTER_SIGNAL_API_URL")
+    FLATHUNTER_SIGNAL_NUMBER = _read_env("FLATHUNTER_SIGNAL_NUMBER")
+    FLATHUNTER_SIGNAL_RECIPIENTS = _read_env("FLATHUNTER_SIGNAL_RECIPIENTS")
+
     # Filters
     FLATHUNTER_FILTER_EXCLUDED_TITLES = _read_env(
         "FLATHUNTER_FILTER_EXCLUDED_TITLES")
@@ -147,7 +152,8 @@ Preis: {price}
             Subito(self),
             Immobiliare(self),
             Idealista(self),
-            VrmImmo(self)
+            VrmImmo(self),
+            Imot(self)
         ]
 
     def check_deprecated(self):
@@ -298,6 +304,18 @@ Preis: {price}
     def slack_webhook_url(self):
         """Webhook for sending Slack messages"""
         return self._read_yaml_path('slack.webhook_url', "")
+
+    def signal_api_url(self) -> str:
+        """Base URL of the signal-cli-rest-api service."""
+        return self._read_yaml_path('signal.api_url', '')
+
+    def signal_number(self) -> str:
+        """Registered or linked Signal sender number."""
+        return self._read_yaml_path('signal.number', '')
+
+    def signal_recipients(self) -> List[str]:
+        """Recipient phone numbers or Signal REST API group IDs."""
+        return self._read_yaml_path('signal.recipients', [])
 
     def apprise_urls(self) -> List[str]:
         """Notification URLs for Apprise"""
@@ -560,6 +578,18 @@ class Config(CaptchaEnvironmentConfig):  # pylint: disable=too-many-public-metho
         if Env.FLATHUNTER_SLACK_WEBHOOK_URL() is not None:
             return Env.FLATHUNTER_SLACK_WEBHOOK_URL()
         return super().slack_webhook_url()
+
+    def signal_api_url(self):
+        return Env.FLATHUNTER_SIGNAL_API_URL() or super().signal_api_url()
+
+    def signal_number(self):
+        return Env.FLATHUNTER_SIGNAL_NUMBER() or super().signal_number()
+
+    def signal_recipients(self):
+        recipients = Env.FLATHUNTER_SIGNAL_RECIPIENTS()
+        if recipients is not None:
+            return [value.strip() for value in recipients.split(',') if value.strip()]
+        return super().signal_recipients()
 
     def apprise_notify_with_images(self) -> bool:
         if Env.FLATHUNTER_APPRISE_NOTIFY_WITH_IMAGES() is not None:

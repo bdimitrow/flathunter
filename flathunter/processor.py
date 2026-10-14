@@ -6,7 +6,9 @@ from flathunter.default_processors import AddressResolver
 from flathunter.default_processors import Filter
 from flathunter.default_processors import LambdaProcessor
 from flathunter.default_processors import CrawlExposeDetails
-from flathunter.notifiers import SenderMattermost, SenderTelegram, SenderApprise, SenderSlack
+from flathunter.notifiers import (
+    SenderMattermost, SenderTelegram, SenderApprise, SenderSlack, SenderSignal,
+)
 from flathunter.gmaps_duration_processor import GMapsDurationProcessor
 from flathunter.idmaintainer import SaveAllExposesProcessor
 from flathunter.abstract_processor import Processor
@@ -30,6 +32,8 @@ class ProcessorChainBuilder:
             self.processors.append(SenderApprise(self.config))
         if 'slack' in notifiers:
             self.processors.append(SenderSlack(self.config))
+        if 'signal' in notifiers:
+            self.processors.append(SenderSignal(self.config))
         return self
 
     def resolve_addresses(self):
